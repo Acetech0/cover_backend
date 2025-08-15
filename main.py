@@ -1,19 +1,20 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from services.generate_letter import generate_cover_letter
 import os
 from dotenv import load_dotenv
+
+# Local imports
+from services.generate_letter import generate_cover_letter
 
 # Load API Key from .env
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Initialize FastAPI app
 app = FastAPI(
     title="CoverCraft AI",
-    description="AI-powered multi-prompt cover letter generator",
-    version="2.0"
+    description="AI-powered multi-prompt cover letter generator (Assassin Mode)",
+    version="2.0.0",
 )
 
 # CORS config (Allow frontend calls from anywhere in dev)
@@ -25,29 +26,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Pydantic model for request body
 class CoverLetterRequest(BaseModel):
     resume: str
     job_description: str
 
-# Health check route
 @app.get("/")
 def root():
-    return {"message": "CoverCraft AI backend is running"}
+    return {"ok": True, "service": "CoverCraft AI V2", "mode": "Assassin"}
 
-# Route: POST /api/generate
 @app.post("/api/generate")
 def generate(request: CoverLetterRequest):
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Gemini API key not found")
 
     try:
-        # Here we now run the multi-prompt "Assassin" chain inside generate_cover_letter()
         letter = generate_cover_letter(
             api_key=GEMINI_API_KEY,
             resume=request.resume,
-            job_description=request.job_description
+            job_description=request.job_description,
         )
         return {"cover_letter": letter}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
