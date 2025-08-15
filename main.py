@@ -10,7 +10,11 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(
+    title="CoverCraft AI",
+    description="AI-powered multi-prompt cover letter generator",
+    version="2.0"
+)
 
 # CORS config (Allow frontend calls from anywhere in dev)
 app.add_middleware(
@@ -26,6 +30,11 @@ class CoverLetterRequest(BaseModel):
     resume: str
     job_description: str
 
+# Health check route
+@app.get("/")
+def root():
+    return {"message": "CoverCraft AI backend is running"}
+
 # Route: POST /api/generate
 @app.post("/api/generate")
 def generate(request: CoverLetterRequest):
@@ -33,6 +42,7 @@ def generate(request: CoverLetterRequest):
         raise HTTPException(status_code=500, detail="Gemini API key not found")
 
     try:
+        # Here we now run the multi-prompt "Assassin" chain inside generate_cover_letter()
         letter = generate_cover_letter(
             api_key=GEMINI_API_KEY,
             resume=request.resume,
